@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "Tests.h"
+#include "tests.h"
 #include "Language.h"
-#include "Utils.h"
 #include "Parser.h"
 #include "Command.h"
 #include "ExecutionClassifier.h"
@@ -17,11 +16,11 @@ void tokenize_string_test(char const* const string){
 
 	char* input = strdup(string);
 
-	string_tokens *tokens = tokenize_string(input);
+	tokens *tokens = tokenize_string(input);
 	printf("String read: %s\ntokens:\n", input);
-	print_string_tokens(tokens);
+	print_tokens(tokens);
 
-	destroy_string_tokens(tokens);
+	destroy_tokens(tokens);
 	free(input);
 
 	end_test(tokenize_string_test)
@@ -32,15 +31,15 @@ void stringfy_tokens_test(char const* const string){
 
 	char* input = strdup(string);
 
-	string_tokens *tokens = tokenize_string(input);
+	tokens *tokens = tokenize_string(input);
 	char* stringfy = stringfy_tokens(tokens, WORD_DELIMITER);
 
 	printf("String read: %s\ntokens:\n", input);
-	print_string_tokens(tokens);
+	print_tokens(tokens);
 	printf("\nTokens converted to a single string again:\n%s\n", stringfy);
 
 	free(stringfy);
-	destroy_string_tokens(tokens);
+	destroy_tokens(tokens);
 	free(input);
 
 	end_test(stringfy_tokens_test)
@@ -51,16 +50,16 @@ void group_tokens_test(char const* const string){
 
 	char* input = strdup(string);
 
-	string_tokens *tokens = tokenize_string(input);
+	tokens *tokens = tokenize_string(input);
 
 	printf("String read: %s\ntokens:\n", input);
-	print_string_tokens(tokens);
+	print_tokens(tokens);
 
 	token_group* group = group_tokens(tokens, COMMAND_DELIMITER);
 	print_token_group(group);
 
 	destroy_token_group(group);
-	destroy_string_tokens(tokens);
+	destroy_tokens(tokens);
 	free(input);
 
 	end_test(group_tokens_test)
@@ -71,7 +70,7 @@ void stringfy_token_group_test(char const* const string){
 
 	char* input = strdup(string);
 
-	string_tokens *tokens = tokenize_string(input);
+	tokens *tokens = tokenize_string(input);
 	token_group* grp = group_tokens(tokens, COMMAND_DELIMITER);
 	char* stringfy = stringfy_token_group(grp, 0, WORD_DELIMITER);
 
@@ -81,7 +80,7 @@ void stringfy_token_group_test(char const* const string){
 
 	free(stringfy);
 	destroy_token_group(grp);
-	destroy_string_tokens(tokens);
+	destroy_tokens(tokens);
 	free(input);
 
 	end_test(stringfy_token_group_test)
@@ -92,10 +91,10 @@ void command_test(char const* const string){
 
 	char* input = strdup(string);
 
-	string_tokens *tokens = tokenize_string(input);
+	tokens *tokens = tokenize_string(input);
 
 	printf("String read: %s\ntokens:\n", input);
-	print_string_tokens(tokens);
+	print_tokens(tokens);
 
 	token_group* group = group_tokens(tokens, COMMAND_DELIMITER);
 	print_token_group(group);
@@ -108,7 +107,7 @@ void command_test(char const* const string){
 		destroy_command(cmd[i]);
 	}
 	destroy_token_group(group);
-	destroy_string_tokens(tokens);
+	destroy_tokens(tokens);
 	free(input);
 
 	end_test(command_test);
