@@ -12,6 +12,11 @@ FLAGS=-Wall -g -Wpedantic -Werror
 CC=gcc
 INCLUDE=$(LIB_FOLDER)
 
+all: | OBJDIR
+
+OBJDIR:
+	mkdir -p $(OBJ_FOLDER)
+
 all: $(PROJECT)
 
 $(PROJECT): $(OBJ_FILES)
@@ -28,6 +33,7 @@ val:
 
 clean:
 	@rm $(OBJ_FILES) $(PROJECT)
+	@rmdir $(OBJ_FOLDER)
 
 debug:
 	@gdb $(PROJECT)
