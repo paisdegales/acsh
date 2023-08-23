@@ -26,6 +26,7 @@ int empty_string(const char * const str){
 
 void wait_forall_children(int const options){
 	int status, pid;
+	//wait(&options) is equivalent to waitpid(-1, &status, 0)
 	while((pid = waitpid(-1, &status, options)) != -1 ){
 		if(WIFEXITED(status)){
 			printf("Child with %d pid has ended normally with status code %d\n", pid, WEXITSTATUS(status));

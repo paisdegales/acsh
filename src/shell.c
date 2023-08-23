@@ -1,13 +1,13 @@
 #include "shell.h"
-#include "tokens.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/wait.h>
-#include <fcntl.h> // dup, open
+#include "tokens.h" //strtok_tokens, destroy_tokens, tokens_tokens, get_token, next_token, reverse_next_token
+#include <errno.h> //ERRNO
+#include <fcntl.h> // dup2, open, O_WRONLY
+#include <signal.h> //SIGINT, SIGTERM, SIGQUIT, SIGTSTP, SA_RESTART, sigaction, struct sigaction, sigemptyset
+#include <stdio.h> //printf, scanf, feof, ferror, perror, clearerr, getchar, stdin, stdout, stderr
+#include <stdlib.h> //free
+#include <string.h> //memset, strcmp
+#include <sys/wait.h> //wait, WIFSIGNALED, WIFEXITED, WEXITSTATUS, WTERMSIG
+#include <unistd.h> //chdir, kill, fork, setsid, execvp, exit
 
 void prompt(const char* const path){
 	printf("%s acsh> ", path);
@@ -42,7 +42,7 @@ int test_internal_cmd(char const* const executable){
 	return 0;
 }
 
-void shell_cd(char **cwd, char const *const path){
+void shell_cd(char **const cwd, char const *const path){
 	if(chdir(path) == -1){
 		perror("acsh failed when changing dir");
 	}
@@ -88,6 +88,7 @@ void shell_handlers(struct sigaction *const oldsigquit, struct sigaction *const 
 	//after a call to this signal handler
 	sigquit.sa_flags = SA_RESTART;
 	sigquit.sa_handler = keyboard_sig_handler;
+
 	//no signals should be blocked while sigquit handler is
 	//happening. This was not specified in the pdf.
 	if(sigemptyset(&sigquit.sa_mask) == -1){
@@ -101,6 +102,7 @@ void shell_handlers(struct sigaction *const oldsigquit, struct sigaction *const 
 	//after a call to this signal handler
 	sigint.sa_flags = SA_RESTART;
 	sigint.sa_handler = keyboard_sig_handler;
+
 	//no signals should be blocked while sigint handler is
 	//happening. This was not specified in the pdf.
 	if(sigemptyset(&sigint.sa_mask) == -1){
@@ -152,6 +154,10 @@ void routine(){
 			}
 			else{
 				//job manager
+				//set job manager's sid to a different session than the shell
+				if(setsid() == -1){
+					perror("Job manager has failed during setsid call");
+				}
 				//restore jobManager's signal handlers to the default
 				if(sigaction(SIGQUIT, &oldsigquit, NULL) == -1){
 					perror("Job manager failed when restoring SIGQUIT's handler");
@@ -257,6 +263,7 @@ void routine(){
 							if(sigaction(SIGINT, &oldsigint, NULL) == -1){
 								perror("Child failed when restoring SIGINT's handler");
 							}
+							//remove % from the tokens
 							tokens = tokens_tokens(job);
 							for(size_t i=0; tokens[i]; i++){
 								if(!strcmp(tokens[i], "%")){
@@ -264,7 +271,6 @@ void routine(){
 									break;
 								}
 							}
-							//remove % from the tokens
 							if(execvp(tokens[0], tokens) == -1){
 								perror("Child failed when executing external command in the fg");
 							}

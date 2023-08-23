@@ -10,6 +10,4 @@ void routine();
 
 int test_internal_cmd(char const* const executable);
 
-void shell_cd(char **cwd, char const* const path);
-
-void shell_exit();
+void shell_cd(char **const cwd, char const* const path);

@@ -1,6 +1,6 @@
 #include <stdio.h> //printf, perror
-#include <stdlib.h> //calloc
-#include <string.h> //strlen, strtok
+#include <stdlib.h> //calloc, free
+#include <string.h> //strlen, strtok, strcpy, strcat
 #include <assert.h> //assert
 #include "macros.h" //WHITE_CHARACTERS
 #include "utils.h" //strtok2, count_tokens
