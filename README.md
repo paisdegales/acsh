@@ -53,3 +53,19 @@ To accomplish what it's intended for, acsh performs many operations such as:
 3. changing the process' signal mask
 4. signal handling
 5. executing commands
+
+---
+
+## This is very interesting! How can I read more about this?
+
+You can find useful informating by reading `manpages`
+
+I recommend these ones:
+
+```
+    man 7 signal
+    man 2 execve
+    man 3 execvp
+```
+
+You can also take a look at bash's documentation. It teaches how a shell works (at least the basics).
