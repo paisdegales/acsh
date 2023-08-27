@@ -18,7 +18,7 @@ Acsh recognizes 2 categories of commands:
 
 By default acsh runs external commands in background and internal commands in foreground.
 
-It can also run one background command in foreground when `%` is provided by the user as the last word in the commandline
+It can also run one external command in foreground when `%` is provided by the user as the last word in the commandline
 
 Acsh recognizes three formats of user input:
 
