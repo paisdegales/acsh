@@ -22,14 +22,17 @@ It can also run one background command in foreground when `%` is provided by the
 
 Acsh recognizes three formats of user input:
 
-Running one command in background
-`acsh> command [options]`
+1. Running one command in background
 
-Running one command in foreground
-`acsh> command [options] %`
+    ```acsh> command [options]```
 
-Running up to 5 commands in background
-`acsh> command [options] <3 command [options] <3 command [options] <3 command [options] <3 command [options]`
+2. Running one command in foreground
+
+    ```acsh> command [options] %```
+
+3. Running up to 5 commands in background
+
+    ```acsh> command [options] <3 command [options] <3 command [options] <3 command [options] <3 command [options]```
 
 ---
 
