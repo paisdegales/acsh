@@ -19,7 +19,7 @@ int test_internal_cmd(char const* const executable);
 /* internal commands */
 void shell_cd(char **const cwd, char const* const path);
 
-/* session managing */
+/* session management */
 void store_pid(unsigned *const children, const size_t size, const int pid);
 void cleanup_pid(unsigned *const children, const size_t size);
 void kill_remaining_processes(unsigned *const children, const size_t size);

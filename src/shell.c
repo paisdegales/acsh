@@ -253,7 +253,7 @@ void shell_handlers(struct sigaction *const oldsigquit, struct sigaction *const 
 
 
 
-/* session managing */
+/* session management */
 
 void store_pid(unsigned *const children, const size_t size, const int pid){
 	for(unsigned i=0; i<size; i++){
