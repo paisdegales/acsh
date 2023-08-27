@@ -98,7 +98,7 @@ int test_internal_cmd(char const* const executable){
 	if(!strcmp(executable, CD_COMMAND)){
 	   return CD_CMD_CODE;
 	}
-	else if(!strcmp(executable, EXIT_COMMAND)){
+	if(!strcmp(executable, EXIT_COMMAND)){
 		return EXIT_CMD_CODE;
 	}
 	return 0;
