@@ -131,7 +131,9 @@ size_t count_word(token_it * const tokens, char const* const word){
 
 token_it* strtok_tokens(char* const source, const char* const delimiter){
 	static char * reference = NULL;
+	token_it* t;
 	char *token;
+
 	if(source){
 		reference = source;
 		token = strtok2(reference, delimiter);
@@ -139,7 +141,8 @@ token_it* strtok_tokens(char* const source, const char* const delimiter){
 	else{
 		token = strtok2(NULL, delimiter);
 	}
-	token_it* t = tokenize_string(token);
+	t = tokenize_string(token);
+
 	return t;
 }
 

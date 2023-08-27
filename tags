@@ -51,34 +51,63 @@
 !_TAG_ROLE_DESCRIPTION!C++!header	local	/local header/
 !_TAG_ROLE_DESCRIPTION!C++!header	system	/system header/
 !_TAG_ROLE_DESCRIPTION!C++!macro	undef	/undefined/
+CD_CMD_CODE	lib/macros.h	/^#define CD_CMD_CODE /;"	d
+CD_COMMAND	lib/macros.h	/^#define CD_COMMAND /;"	d
+EXIT_CMD_CODE	lib/macros.h	/^#define EXIT_CMD_CODE /;"	d
+EXIT_COMMAND	lib/macros.h	/^#define EXIT_COMMAND /;"	d
+FG_OPERATOR	lib/macros.h	/^#define FG_OPERATOR /;"	d
+INTERNAL_CMD_CODE	lib/macros.h	/^#define INTERNAL_CMD_CODE /;"	d
+JOB_SEPARATOR	lib/macros.h	/^#define JOB_SEPARATOR /;"	d
+MAX_JOBS	lib/macros.h	/^#define MAX_JOBS /;"	d
+MAX_OPTIONS	lib/macros.h	/^#define MAX_OPTIONS /;"	d
+MAX_SESSIONS	lib/macros.h	/^#define MAX_SESSIONS /;"	d
+STDIN_BUFFERSIZE	lib/macros.h	/^#define STDIN_BUFFERSIZE /;"	d
 WHITE_CHARACTERS	lib/macros.h	/^#define WHITE_CHARACTERS /;"	d
-compare	src/main.c	/^int compare(void* num1, void* num2){$/;"	f	typeref:typename:int
+buffer	src/shell.c	/^	char buffer[STDIN_BUFFERSIZE];$/;"	m	struct:shell	typeref:typename:char[]	file:
+children	src/shell.c	/^	unsigned children[40];$/;"	m	struct:shell	typeref:typename:unsigned[40]	file:
+cleanup_pid	src/shell.c	/^void cleanup_pid(unsigned *const children, const size_t size){$/;"	f	typeref:typename:void
 count_tokens	src/utils.c	/^size_t count_tokens(const char* source){$/;"	f	typeref:typename:size_t
 count_word	src/tokens.c	/^size_t count_word(token_it * const tokens, char const* const word){$/;"	f	typeref:typename:size_t
+destroy_shell	src/shell.c	/^shell* destroy_shell(shell* sh){$/;"	f	typeref:typename:shell *
 destroy_tokens	src/tokens.c	/^token_it* destroy_tokens(token_it* t){$/;"	f	typeref:typename:token_it *
 empty_string	src/utils.c	/^int empty_string(const char * const str){$/;"	f	typeref:typename:int
 empty_tokens	src/tokens.c	/^int empty_tokens(token_it const* const t){$/;"	f	typeref:typename:int
-func	src/main.c	/^void* func(void* num1, void *num2, void* res){$/;"	f	typeref:typename:void *
+execute_commands	src/shell.c	/^void execute_commands(shell *const sh){$/;"	f	typeref:typename:void
 get_token	src/tokens.c	/^char* get_token(token_it const* const t){$/;"	f	typeref:typename:char *
 index	src/tokens.c	/^	size_t size, index;$/;"	m	struct:token_it	typeref:typename:size_t	file:
+job	src/shell.c	/^	token_it *job, *next_job;$/;"	m	struct:shell	typeref:typename:token_it *	file:
+jobmanager_many_background	src/shell.c	/^void jobmanager_many_background(shell *const sh){$/;"	f	typeref:typename:void
 keyboard_sig_handler	src/shell.c	/^void keyboard_sig_handler(int sig){$/;"	f	typeref:typename:void
+kill_remaining_processes	src/shell.c	/^void kill_remaining_processes(unsigned *const children, const size_t size){$/;"	f	typeref:typename:void
 main	src/main.c	/^int main(int argc, char* argv[]){$/;"	f	typeref:typename:int
+many_background	src/shell.c	/^void many_background(shell * const sh){$/;"	f	typeref:typename:void
+new_shell	src/shell.c	/^shell* new_shell(){$/;"	f	typeref:typename:shell *
+next_job	src/shell.c	/^	token_it *job, *next_job;$/;"	m	struct:shell	typeref:typename:token_it *	file:
 next_token	src/tokens.c	/^char* next_token(token_it* const t){$/;"	f	typeref:typename:char *
+oldsigint	src/shell.c	/^	struct sigaction oldsigquit, oldsigint;$/;"	m	struct:shell	typeref:struct:sigaction	file:
+oldsigquit	src/shell.c	/^	struct sigaction oldsigquit, oldsigint;$/;"	m	struct:shell	typeref:struct:sigaction	file:
+path	src/shell.c	/^	char *path;$/;"	m	struct:shell	typeref:typename:char *	file:
 print_tokens	src/tokens.c	/^void print_tokens(token_it const* const t){$/;"	f	typeref:typename:void
-prompt	src/shell.c	/^void prompt(){$/;"	f	typeref:typename:void
+prompt	src/shell.c	/^void prompt(const char* const path){$/;"	f	typeref:typename:void
 read_stdin	src/shell.c	/^int read_stdin(char *buffer, const size_t buffer_size){$/;"	f	typeref:typename:int
 reverse_next_token	src/tokens.c	/^char* reverse_next_token(token_it *const t){$/;"	f	typeref:typename:char *
-routine	src/shell.c	/^void routine(){$/;"	f	typeref:typename:void
-shell_cd	src/shell.c	/^void shell_cd(char const* const path){$/;"	f	typeref:typename:void
-shell_exit	src/shell.c	/^void shell_exit(){$/;"	f	typeref:typename:void
+routine	src/shell.c	/^void routine(shell* const sh){$/;"	f	typeref:typename:void
+set_sigusr1_handler	src/shell.c	/^void set_sigusr1_handler(){$/;"	f	typeref:typename:void
+shell	lib/shell.h	/^typedef struct shell shell;$/;"	t	typeref:struct:shell
+shell	src/shell.c	/^struct shell{$/;"	s	file:
+shell_cd	src/shell.c	/^void shell_cd(char **const cwd, char const *const path){$/;"	f	typeref:typename:void
 shell_handlers	src/shell.c	/^void shell_handlers(struct sigaction *const oldsigquit, struct sigaction *const oldsigint){$/;"	f	typeref:typename:void
+shell_many_background	src/shell.c	/^void shell_many_background(shell *const sh, const int jobmanager_pid){$/;"	f	typeref:typename:void
+shell_single_ext_background	src/shell.c	/^void shell_single_ext_background(shell *const sh, const int worker_pid){$/;"	f	typeref:typename:void
+shell_single_ext_foreground	src/shell.c	/^void shell_single_ext_foreground(){$/;"	f	typeref:typename:void
+sigusr1_handler	src/shell.c	/^void sigusr1_handler(int sig){$/;"	f	typeref:typename:void
+single_ext_background	src/shell.c	/^void single_ext_background(shell *const sh){$/;"	f	typeref:typename:void
+single_ext_foreground	src/shell.c	/^void single_ext_foreground(shell *const sh){$/;"	f	typeref:typename:void
 size	src/tokens.c	/^	size_t size, index;$/;"	m	struct:token_it	typeref:typename:size_t	file:
+store_pid	src/shell.c	/^void store_pid(unsigned *const children, const size_t size, const int pid){$/;"	f	typeref:typename:void
 stringfy_tokens	src/tokens.c	/^char* stringfy_tokens(token_it const* const t, const char* separator){$/;"	f	typeref:typename:char *
 strtok2	src/utils.c	/^char* strtok2(char *const str, char const *const delimiter){$/;"	f	typeref:typename:char *
 strtok_tokens	src/tokens.c	/^token_it* strtok_tokens(char* const source, const char* const delimiter){$/;"	f	typeref:typename:token_it *
-test1	src/test.c	/^void test1(void* in1, void *expected_output, void* (*const func)(), int (*const compare)()){$/;"	f	typeref:typename:void
-test2	src/test.c	/^void test2(void* in1, void* in2, void *expected_output, void* (*const func)(), int (*const compa/;"	f	typeref:typename:void
-test3	src/test.c	/^void test3(void* in1, void* in2, void* in3, void *expected_output, void* (*const func)(), int (*/;"	f	typeref:typename:void
 test_internal_cmd	src/shell.c	/^int test_internal_cmd(char const* const executable){$/;"	f	typeref:typename:int
 token_it	lib/tokens.h	/^typedef struct token_it token_it;$/;"	t	typeref:struct:token_it
 token_it	src/tokens.c	/^struct token_it{$/;"	s	file:
@@ -86,3 +115,5 @@ tokenize_string	src/tokens.c	/^token_it* tokenize_string(const char* const sourc
 tokens	src/tokens.c	/^	char **tokens;$/;"	m	struct:token_it	typeref:typename:char **	file:
 tokens_tokens	src/tokens.c	/^char** tokens_tokens(token_it const* const t){$/;"	f	typeref:typename:char **
 wait_forall_children	src/utils.c	/^void wait_forall_children(int const options){$/;"	f	typeref:typename:void
+worker_single_ext_background	src/shell.c	/^void worker_single_ext_background(shell *const sh){$/;"	f	typeref:typename:void
+worker_single_ext_foreground	src/shell.c	/^void worker_single_ext_foreground(shell *const sh){$/;"	f	typeref:typename:void

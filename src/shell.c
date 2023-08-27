@@ -1,13 +1,78 @@
 #include "shell.h"
 #include "tokens.h" //strtok_tokens, destroy_tokens, tokens_tokens, get_token, next_token, reverse_next_token
+#include "macros.h" //STDIN_BUFFERSIZE, MAX_SESSIONS, MAX_JOBS, MAX_OPTIONS  
 #include <errno.h> //ERRNO
-#include <fcntl.h> // dup2, open, O_WRONLY
+#include <fcntl.h> //dup2, open, O_WRONLY
 #include <signal.h> //SIGINT, SIGTERM, SIGQUIT, SIGTSTP, SA_RESTART, sigaction, struct sigaction, sigemptyset
 #include <stdio.h> //printf, scanf, feof, ferror, perror, clearerr, getchar, stdin, stdout, stderr
-#include <stdlib.h> //free
+#include <stdlib.h> //free, EXIT_SUCCESS, EXIT_FAILURE
 #include <string.h> //memset, strcmp
 #include <sys/wait.h> //wait, WIFSIGNALED, WIFEXITED, WEXITSTATUS, WTERMSIG
 #include <unistd.h> //chdir, kill, fork, setsid, execvp, exit
+
+struct shell{
+	unsigned children[40];
+	char *path;
+	char buffer[STDIN_BUFFERSIZE];
+	token_it *job, *next_job;
+	struct sigaction oldsigquit, oldsigint;
+};
+
+
+
+
+
+
+
+/* basic */
+
+shell* new_shell(){
+	shell* sh = calloc(1, sizeof(shell));
+	char *path = getcwd(NULL, 0);
+	sh->path = path;
+	shell_handlers(&sh->oldsigquit, &sh->oldsigint);
+	return sh;
+}
+
+shell* destroy_shell(shell* sh){
+	if(!sh){
+		return NULL;
+	}
+	if(sh->path){
+		free(sh->path);
+	}
+	free(sh);
+	return NULL;
+}
+
+void routine(shell* const sh){
+	int status;
+	while(1){
+		prompt(sh->path);
+
+		status = read_stdin(sh->buffer, STDIN_BUFFERSIZE);
+		if(status != 1){
+			destroy_shell(sh);
+			return ;
+		}
+
+		execute_commands(sh);
+
+		//the shell checks if any jobManager/single external process terminated. In such case,
+		//it attempts to remove its pid from 'childs' array
+		cleanup_pid(sh->children, MAX_SESSIONS);
+	}
+}
+
+
+
+
+
+
+
+
+
+/* tasks */
 
 void prompt(const char* const path){
 	printf("%s acsh> ", path);
@@ -19,28 +84,85 @@ int read_stdin(char *buffer, const size_t buffer_size){
 		if(feof(stdin)){
 			return 0;
 		}
-		else if(ferror(stdin)){
+		if(ferror(stdin)){
 			perror("something went wrong when reading stdin");
 			clearerr(stdin);
+			return -1;
 		}
-		else{
-			perror("something unexpected occurred!");
-		}
-		return -1;
 	}
 	getchar();
 	return 1;
 }
 
 int test_internal_cmd(char const* const executable){
-	if(!strcmp(executable, "cd")){
-	   return 1;
+	if(!strcmp(executable, CD_COMMAND)){
+	   return CD_CMD_CODE;
 	}
-	else if(!strcmp(executable, "exit")){
-		return 2;
+	else if(!strcmp(executable, EXIT_COMMAND)){
+		return EXIT_CMD_CODE;
 	}
 	return 0;
 }
+
+void execute_commands(shell *const sh){
+	sh->job = strtok_tokens(sh->buffer, JOB_SEPARATOR);
+	if(!sh->job){
+		return ;
+	}
+
+	int status;
+	char *token;
+
+	sh->next_job = strtok_tokens(NULL, JOB_SEPARATOR);
+	if(sh->next_job){
+		/* 	if more than 1 job is found, the shell presumes
+			that multiple external commands will run in the bg.
+			No checking for the % operator is made therefore.  */
+		many_background(sh);
+		return ;
+	}
+
+	/* 	if only 1 job is found, the shell has to take one step further
+		and analyze if the job is an internal/external program
+		and it's running mode.  */
+
+	//test if token is an external/internal command
+	token = get_token(sh->job);
+	status = test_internal_cmd(token);
+	switch(status){
+		case CD_CMD_CODE:
+			//getting the dir target
+			token = next_token(sh->job);
+			shell_cd(&sh->path, token);
+			break;
+		case EXIT_CMD_CODE:
+			kill_remaining_processes(sh->children, MAX_SESSIONS);
+			destroy_shell(sh);
+			exit(EXIT_SUCCESS);
+		default:
+			// external command
+			// obtaining the last token
+			token = reverse_next_token(sh->job);
+			if(!strcmp(token, FG_OPERATOR)){
+				single_ext_foreground(sh);
+			}
+			else{
+				single_ext_background(sh);
+			}
+			break;
+	}
+	sh->job = destroy_tokens(sh->job);
+}
+
+
+
+
+
+
+
+
+
+/* internal commands */
 
 void shell_cd(char **const cwd, char const *const path){
 	if(chdir(path) == -1){
@@ -51,6 +173,17 @@ void shell_cd(char **const cwd, char const *const path){
 	}
 	*cwd = getcwd(NULL, 0);
 }
+
+
+
+
+
+
+
+
+
+
+/* signal handling */
 
 void keyboard_sig_handler(int sig){
 	if(sig == SIGINT){
@@ -113,227 +246,241 @@ void shell_handlers(struct sigaction *const oldsigquit, struct sigaction *const 
 	}
 }
 
-void routine(){
-	char buffer[1000], *token, **tokens;
-	token_it *job, *next_job;
-	int status, pid;
-	unsigned children[40];
-	struct sigaction oldsigquit, oldsigint;
-	char *path = getcwd(NULL, 0);
 
-	shell_handlers(&oldsigquit, &oldsigint);
-	memset(children, 0, 40*sizeof(unsigned));
-	while(1){
-		prompt(path);
 
-		if(read_stdin(buffer, sizeof(buffer)) != 1){
-			return ;
+
+
+
+
+
+/* session managing */
+
+void store_pid(unsigned *const children, const size_t size, const int pid){
+	for(unsigned i=0; i<size; i++){
+		if(!children[i]){
+			children[i] = pid;
+			break;
 		}
+	}
+}
 
-		job = strtok_tokens(buffer, "<3");
-		if(!job){
-			continue;
-		}
-
-		next_job = strtok_tokens(NULL, "<3");
-		if(next_job){
-			/* 	if more than 1 job is found, the shell presumes
-				that multiple external commands will run in the bg.
-				No checking for the % operator is made therefore.  */
-			//create jobManager process
-			if((pid = fork())){
-				//shell
-				//store its job manager pid
-				for(unsigned i=0; i<40; i++){
-					if(!children[i]){
-						children[i] = pid;
-						break;
-					}
-				}
-				//shell leaves and encharges the jobManager of creating all job processes
+void cleanup_pid(unsigned *const children, const size_t size){
+	for(unsigned i=0; i<size; i++){
+		if(children[i]){
+			if(kill(children[i], 0) == -1){
+				perror("Acsh failed during pid cleanup");
 			}
 			else{
-				//job manager
-				//set job manager's sid to a different session than the shell
-				if(setsid() == -1){
-					perror("Job manager has failed during setsid call");
-				}
-				//restore jobManager's signal handlers to the default
-				if(sigaction(SIGQUIT, &oldsigquit, NULL) == -1){
-					perror("Job manager failed when restoring SIGQUIT's handler");
-				}
-				if(sigaction(SIGINT, &oldsigint, NULL) == -1){
-					perror("Job manager failed when restoring SIGINT's handler");
-				}
-				//add SIGUSR1 handler
-				//create each job and put it in the background
-				//child processes inherit file descriptors, thats neat!
-				set_sigusr1_handler();
-				int fd = open("/dev/null", O_WRONLY);
-				if(fd == -1){
-					perror("Job manager failed when opening /dev/null");
-					break;
-				}
-				if(dup2(fd, 1) == -1){
-					perror("Job manager failed when piping its stdout to /dev/null");
-					break;
-				}
-				if(dup2(fd, 2) == -1){
-					perror("Job manager failed when piping its stderr to /dev/null");
-					break;
-				}
-				//iterate at least 5 times, one per available job
-				for(int i=0; i<5 && job; i++){
-					tokens = tokens_tokens(job);
-					if(!fork()){
-						//child
-						if(execvp(tokens[0], tokens) == -1){
-							perror("A child failed when executing an external program in bg");
-						}
-					}
-					//job manager
-					job = destroy_tokens(job);
-					job = next_job;
-					next_job = strtok_tokens(NULL, "<3");
-				}
-				//jobManager waits patiently for all its children to terminate
-				while((pid = wait(&status)) != -1){
-					if(WIFEXITED(status)){
-						printf("External background command %d ended normally with status %d\n", pid, WEXITSTATUS(status));
-					}
-					else{
-						printf("External background command %d was ended by signal %d\n", pid, WTERMSIG(status));
-					}
-
-				}
-			}
-
-		}
-		else{
-			/* 	if only 1 job is found, the shell has to take one step further
-				and analyze if the job is an internal/external program
-				and it's running mode.  */
-
-			//test if token is external or internal
-			token = get_token(job);
-			status = test_internal_cmd(token);
-			switch(status){
-				case 1:
-					//getting the dir target
-					token = next_token(job);
-					shell_cd(&path, token);
-					break;
-				case 2:
-					//kill remaining processes
-					for(unsigned i=0; i<40; i++){
-						if(children[i]){
-							if(kill(children[i], SIGTERM) == -1){
-								perror("Acsh failed when killing a child!");
-							}
-						}
-					}
-					//deallocate all memory
-					if(path){
-						free(path);
-					}
-					exit(0);
-				default:
-					//external command
-					// obtaining the last token
-					token = reverse_next_token(job);
-					if(!strcmp(token, "%")){
-						//foreground
-
-						if(fork()){
-							//shell
-							//the shell runs in bg and waits patiently for its child to terminate
-							pid = wait(&status);
-							if(WIFEXITED(status)){
-								printf("External foreground command %d ended normally with status %d\n", pid, WEXITSTATUS(status));
-							}
-							else{
-								printf("External foreground command %d was ended by signal %d\n", pid, WTERMSIG(status));
-							}
-						}
-						else{
-							//child
-							if(sigaction(SIGQUIT, &oldsigquit, NULL) == -1){
-								perror("Child failed when restoring SIGQUIT's handler");
-							}
-							if(sigaction(SIGINT, &oldsigint, NULL) == -1){
-								perror("Child failed when restoring SIGINT's handler");
-							}
-							//remove % from the tokens
-							tokens = tokens_tokens(job);
-							for(size_t i=0; tokens[i]; i++){
-								if(!strcmp(tokens[i], "%")){
-									tokens[i] = NULL;
-									break;
-								}
-							}
-							if(execvp(tokens[0], tokens) == -1){
-								perror("Child failed when executing external command in the fg");
-							}
-						}
-					}
-					else{
-						//background
-						if((pid = fork())){
-							//shell
-							//store its child pid
-							for(unsigned i=0; i<40; i++){
-								if(!children[i]){
-									children[i] = pid;
-									break;
-								}
-							}
-						}
-						else{
-							//child
-							int fd = open("/dev/null", O_WRONLY);
-							if(fd == -1){
-								perror("Child failed when opening /dev/null");
-								break;
-							}
-							else{
-								if(dup2(fd, 1) == -1){
-									perror("Child failed when piping its stdout to /dev/null");
-									break;
-								}
-								if(dup2(fd, 2) == -1){
-									perror("Child failed when piping its stderr to /dev/null");
-									break;
-								}
-							}
-							if(sigaction(SIGQUIT, &oldsigquit, NULL) == -1){
-								perror("Child failed when restoring SIGQUIT's handler");
-							}
-							if(sigaction(SIGINT, &oldsigint, NULL) == -1){
-								perror("Child failed when restoring SIGINT's handler");
-							}
-							tokens = tokens_tokens(job);
-							if(execvp(tokens[0], tokens) == -1){
-								perror("Child failed when executing external command in the fg");
-							}
-						}
-					}
-					break;
-			}
-			job = destroy_tokens(job);
-		}
-
-		//the shell checks if any jobManager/singled external process terminated. In such case,
-		//it attempts to remove its pid from 'childs' array
-		for(unsigned i=0; i<40; i++){
-			if(children[i]){
-				if(kill(children[i], 0) == -1){
-					//an error occurred... this could mean that
-					//this child has already terminated
-					children[i] = 0;
-					break;
-				}
+				children[i] = 0;
 			}
 		}
 	}
 }
 
+void kill_remaining_processes(unsigned *const children, const size_t size){
+	for(unsigned i=0; i<size; i++){
+		if(children[i]){
+			if(kill(children[i], SIGTERM) == -1){
+				perror("Acsh failed when killing a child process!");
+			}
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+/* for multiple external commands running in background */
+
+void many_background(shell * const sh){
+	//create jobManager process
+	int pid = fork();
+
+	if(pid){
+		shell_many_background(sh, pid);
+	}
+	else{
+		jobmanager_many_background(sh);
+	}
+}
+
+void jobmanager_many_background(shell *const sh){
+	int pid, status;
+
+	//set job manager's sid to a different session than the shell
+	if(setsid() == -1){
+		perror("Job manager has failed during setsid call");
+	}
+	//restore jobManager's signal handlers to the default
+	if(sigaction(SIGQUIT, &sh->oldsigquit, NULL) == -1){
+		perror("Job manager failed when restoring SIGQUIT's handler");
+	}
+	if(sigaction(SIGINT, &sh->oldsigint, NULL) == -1){
+		perror("Job manager failed when restoring SIGINT's handler");
+	}
+
+	//add SIGUSR1 handler
+	//child processes inherit file descriptors, thats neat!
+	set_sigusr1_handler();
+	int fd = open("/dev/null", O_WRONLY);
+	if(fd == -1){
+		perror("Job manager failed when opening /dev/null");
+		return;
+	}
+	if(dup2(fd, 1) == -1){
+		perror("Job manager failed when piping its stdout to /dev/null");
+		return;
+	}
+	if(dup2(fd, 2) == -1){
+		perror("Job manager failed when piping its stderr to /dev/null");
+		return;
+	}
+
+	//create each job and put it in the background
+	char **tokens;
+	for(int i=0; i<MAX_JOBS && sh->job; i++){
+		tokens = tokens_tokens(sh->job);
+		if(!fork()){
+			//child
+			if(execvp(tokens[0], tokens) == -1){
+				perror("A child failed when executing an external program in bg");
+			}
+		}
+		//job manager
+		sh->job = destroy_tokens(sh->job);
+		sh->job = sh->next_job;
+		sh->next_job = strtok_tokens(NULL, "<3");
+	}
+
+	//jobManager waits patiently for all its children to terminate
+	while((pid = wait(&status)) != -1){
+		if(WIFEXITED(status)){
+			printf("External background command %d ended normally with status %d\n", pid, WEXITSTATUS(status));
+		}
+		else{
+			printf("External background command %d was ended by signal %d\n", pid, WTERMSIG(status));
+		}
+	}
+}
+
+void shell_many_background(shell *const sh, const int jobmanager_pid){
+	//store its job manager pid
+	store_pid(sh->children, MAX_SESSIONS, jobmanager_pid);
+	//shell leaves and encharges the jobManager of creating all job processes
+}
+
+
+
+
+
+
+
+
+
+
+
+/* for a single external command running in foreground */
+
+void single_ext_foreground(shell *const sh){
+	if(fork()){
+		shell_single_ext_foreground();
+	}
+	else{
+		worker_single_ext_foreground(sh);
+	}
+}
+
+void shell_single_ext_foreground(){
+	//the shell runs in bg and waits patiently for its child to terminate
+	int pid, status;
+	pid = wait(&status);
+	if(WIFEXITED(status)){
+		printf("External foreground command %d ended normally with status %d\n", pid, WEXITSTATUS(status));
+	}
+	else{
+		printf("External foreground command %d was ended by signal %d\n", pid, WTERMSIG(status));
+	}
+}
+
+void worker_single_ext_foreground(shell *const sh){
+	char **tokens = tokens_tokens(sh->job);
+	if(sigaction(SIGQUIT, &sh->oldsigquit, NULL) == -1){
+		perror("Child failed when restoring SIGQUIT's handler");
+	}
+	if(sigaction(SIGINT, &sh->oldsigint, NULL) == -1){
+		perror("Child failed when restoring SIGINT's handler");
+	}
+
+	//remove % from the tokens
+	for(size_t i=0; tokens[i]; i++){
+		if(!strcmp(tokens[i], "%")){
+			tokens[i] = NULL;
+			break;
+		}
+	}
+	if(execvp(tokens[0], tokens) == -1){
+		perror("Child failed when executing external command in the fg");
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+/* for a single external command running in background */
+
+void single_ext_background(shell *const sh){
+	int pid = fork();
+	if(pid){
+		shell_single_ext_background(sh, pid);
+	}
+	else{
+		worker_single_ext_background(sh);
+	}
+}
+
+void shell_single_ext_background(shell *const sh, const int worker_pid){
+	//store its worker pid
+	store_pid(sh->children, MAX_SESSIONS, worker_pid);
+}
+
+void worker_single_ext_background(shell *const sh){
+	int fd = open("/dev/null", O_WRONLY);
+	char **tokens;
+	if(fd == -1){
+		perror("Child failed when opening /dev/null");
+		return ;
+	}
+	else{
+		if(dup2(fd, 1) == -1){
+			perror("Child failed when piping its stdout to /dev/null");
+			return ;
+		}
+		if(dup2(fd, 2) == -1){
+			perror("Child failed when piping its stderr to /dev/null");
+			return ;
+		}
+	}
+	if(sigaction(SIGQUIT, &sh->oldsigquit, NULL) == -1){
+		perror("Child failed when restoring SIGQUIT's handler");
+	}
+	if(sigaction(SIGINT, &sh->oldsigint, NULL) == -1){
+		perror("Child failed when restoring SIGINT's handler");
+	}
+	tokens = tokens_tokens(sh->job);
+	if(execvp(tokens[0], tokens) == -1){
+		perror("Child failed when executing external command in the fg");
+	}
+}
