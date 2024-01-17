@@ -6,7 +6,7 @@
 typedef struct shell shell;
 
 /* basic */
-shell* new_shell();
+shell* new_shell(void);
 shell* destroy_shell(shell* sh);
 void routine(shell* const sh);
 
@@ -27,7 +27,7 @@ void kill_remaining_processes(unsigned *const children, const size_t size);
 /* signal handling */
 void keyboard_sig_handler(int sig);
 void sigusr1_handler(int sig);
-void set_sigusr1_handler();
+void set_sigusr1_handler(void);
 void shell_handlers(struct sigaction *const oldsigquit, struct sigaction *const oldsigint);
 
 /* for multiple external commands running in background */
@@ -37,7 +37,7 @@ void jobmanager_many_background(shell *const sh);
 
 /* for a single external command running in foreground */
 void single_ext_foreground(shell *const sh);
-void shell_single_ext_foreground();
+void shell_single_ext_foreground(void);
 void worker_single_ext_foreground(shell *const sh);
 
 /* for a single external command running in background */

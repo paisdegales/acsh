@@ -1,4 +1,2 @@
-tags
-Session.vim
-bak/
+compile_commands.json
 obj/

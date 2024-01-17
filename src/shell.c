@@ -26,7 +26,7 @@ struct shell{
 
 /* basic */
 
-shell* new_shell(){
+shell* new_shell(void){
 	shell* sh = calloc(1, sizeof(shell));
 	char *path = getcwd(NULL, 0);
 	sh->path = path;
@@ -201,7 +201,7 @@ void sigusr1_handler(int sig){
 	}
 }
 
-void set_sigusr1_handler(){
+void set_sigusr1_handler(void){
 	struct sigaction sigusr1;
 	sigusr1.sa_flags = SA_RESTART;
 	sigusr1.sa_handler = sigusr1_handler;
@@ -396,7 +396,7 @@ void single_ext_foreground(shell *const sh){
 	}
 }
 
-void shell_single_ext_foreground(){
+void shell_single_ext_foreground(void){
 	//the shell runs in bg and waits patiently for its child to terminate
 	int pid, status;
 	pid = wait(&status);

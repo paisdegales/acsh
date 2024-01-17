@@ -1,46 +1,46 @@
-PROJECT=Acsh
+project=acsh
 
-SRC_FOLDER=src
-LIB_FOLDER=lib
-OBJ_FOLDER=obj
+src_folder=src
+lib_folder=lib
+obj_folder=obj
 
-SRC_FILES=$(wildcard $(SRC_FOLDER)/*.c)
-LIB_FILES=$(wildcard $(LIB_FOLDER)/*.h)
-OBJ_FILES=$(subst $(SRC_FOLDER),$(OBJ_FOLDER),$(SRC_FILES:.c=.o))
+src_files=$(wildcard $(src_folder)/*.c)
+lib_files=$(wildcard $(lib_folder)/*.h)
+obj_files=$(subst $(src_folder),$(obj_folder),$(src_files:.c=.o))
+include=$(lib_folder)
 
-FLAGS=-Wall -g -Wpedantic -Werror
+CFLAGS=-Wall -g -Wpedantic -Werror
 CC=gcc
-INCLUDE=$(LIB_FOLDER)
 
-all: | OBJDIR
+all: | objdir
 
-OBJDIR:
-	mkdir -p $(OBJ_FOLDER)
+objdir:
+	mkdir -p $(obj_folder)
 
-all: $(PROJECT)
+all: $(project)
 
-$(PROJECT): $(OBJ_FILES)
-	@$(CC) $^ -o $@ $(FLAGS)
+$(project): $(obj_files)
+	@$(CC) $^ -o $@ $(CFLAGS)
 
-$(OBJ_FOLDER)/%.o: $(SRC_FOLDER)/%.c $(LIB_FILES)
-	$(CC) -c $< -o $@ $(FLAGS) -I $(INCLUDE)
+$(obj_folder)/%.o: $(src_folder)/%.c
+	$(CC) -c $< -o $@ $(CFLAGS) -I $(include)
 
 run:
-	@./$(PROJECT)
+	@./$(project)
 
 val:
-	@valgrind --leak-check=full --show-leak-kinds=all -s ./$(PROJECT)
+	@valgrind --leak-check=full --show-leak-kinds=all -s ./$(project)
 
 clean:
-	@rm $(OBJ_FILES) $(PROJECT)
-	@rmdir $(OBJ_FOLDER)
+	@rm $(obj_files) $(project)
+	@rmdir $(obj_folder)
 
 debug:
-	@gdb $(PROJECT)
+	@gdb $(project)
 
 man:
 	man 7 signal 2 sigprocmask sigaction gdb
 
 echo:
-	@echo "Folders:" "$(SRC_FOLDER)" "$(LIB_FOLDER)" "$(OBJ_FOLDER)" 
-	@echo "Files:" "$(SRC_FILES)" "$(LIB_FILES)" "$(OBJ_FILES)" 
+	@echo "Folders:" "$(src_folder)" "$(lib_folder)" "$(obj_folder)" 
+	@echo "Files:" "$(src_files)" "$(lib_files)" "$(obj_files)" 
