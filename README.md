@@ -40,8 +40,8 @@ Acsh recognizes three formats of user input:
 
 Acsh performs tasks in a similar way as an ordinary shell.
 
-The way it works can be summarized as the following:
-1. acsh waits patiently for the user to enter some command
+The way it works can be summarized as follows:
+1. acsh waits patiently for the user to enter a command
 2. acsh stores what was entered in a buffer and breaks it down into tokens
 3. tokens are grouped into jobs (`<3` separates different jobs)
 4. tokens/jobs are analyzed and executed according with their categories and running modes
